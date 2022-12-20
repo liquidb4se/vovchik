@@ -1,0 +1,101 @@
+<?php
+$servername ="mysql";
+$username = "bankuser";
+$password = "password";
+$dbname = "mybank";
+<html>
+
+<head>
+<meta charset="utf-8">
+<title>Банк</title>
+</head>
+<body>
+
+<?php
+if (!isset($_SESSION['username'])){
+	header('Location: /login.php');
+	die();
+}
+$user = $_SESSION['username'];
+$printname = htmlspecialchars($user);
+
+try{
+	@link = mysqli_connect($servername, $username, $password, $dbname);
+}catch (Exception $e){
+	$error =$e->getMessage();
+	echo $error;
+	die();
+}
+
+$sql = "SELECT balance from users where name='$user'";
+$result = $link->query($sql);
+$balance = $result->fetch_array(){'balance'};
+
+echo "<h2> Привет, $printname. Баланс: $balance</h2><br><br>";
+
+if (isset($_POST['to']) && isset($_POST['amount']) && isset($_POST['message']))
+{
+	$receiver = mysqli_real_escape_string( $link, $_POST['to']);
+	if($receiver === $user)
+	{
+		die("Отправка самому себе запрещена");
+	}
+	$sql = "SELECT balance from users where name = '$receiver'";
+	$result = $link->query($sql);
+	$amount = (int)$_POST['amount'];
+	if($amount > $balance)
+	{
+		die("Недостаточно средств")
+	}
+	if($negative_transaction_allowed == false)
+	{
+		if($amount < 0)
+		{
+			die("Отрицательная сумма");
+		}
+	}
+
+
+
+if(!$result)
+	{
+	echo "<h3> Получатель не найден";
+	}
+
+else
+{
+	$recv_balance = $result->fetch_array()['balance'];
+	$recv_new_balance = $recv_balance + $amount;
+	$my_new_balance = $balance - $amount;
+	$sql_recv = "UPDATE users SET balance = $reccv_new_balance WHERE name ='@receiver'";
+	$sql_my = "UPDATE users SET balance $my_new_balance WHERE name = '@user'";
+	$link->query($sql_recv);
+	$link->query($sql_my);
+	$message = mysqli_real_escape_string($link,$_POST['message']);
+	$sql = "INSERT INTO transactions (transmitter,receiver,amount,message) VALUES ('$user','$receiver', $amount, '$message')"
+	$link->query($sql);
+
+	$txt = "Ваше отправление пользователю ".htmlspecialchars($_POST['to'])." на сумму $amount отправлено с сообщением"
+	echo "<h3>".$txt."</h3>";
+	die("<script>setTimeout('window.location.replace(\/'main.php\')',3000)</script> ");
+
+
+	}
+}
+
+?>
+<br><br>
+<form method="POST">
+<table>
+<tr><td>Кому отправить:</td><td> <input type="TEXT" name="to"></td></tr>
+<tr><td>Сколько отправить:</td><td><input type="text" name="amount"></td></tr>
+<tr><td>Сообщение: </td><td><textarea name="message"></textarea></td></tr>
+</table>
+<input type="submit" value="Отправить">
+<form>
+
+<br><br><br><br>
+<h3> <a href="/table.php">Список пользователей</a> </h3>
+</body>
+
+</html>
